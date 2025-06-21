@@ -1,0 +1,15 @@
+name: rag-llm-env
+channels:
+  - conda-forge
+  - defaults
+dependencies:
+  - python=3.11
+  - pip
+  - pip:
+    - streamlit>=1.28.0
+    - openai>=1.0.0
+    - python-dotenv>=1.0.0
+    - httpx>=0.25.0
+    - numpy>=1.24.0
+    - pandas>=2.0.0
+    - pathlib2>=2.3.7 
