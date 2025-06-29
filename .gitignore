@@ -163,3 +163,7 @@ cython_debug/
 
 # Exclude only PDF files in data directory and subdirectories
 data/**/*.pdf
+
+# Exclude write_up markdown files
+write_up*.md
+write_up_*.md

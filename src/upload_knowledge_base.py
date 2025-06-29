@@ -6,6 +6,7 @@ Usage:
     python src/upload_knowledge_base.py --dir data/Knowledge_base --name "my_knowledge_base"
     python src/upload_knowledge_base.py --dir data/Deep_Research_reports --name "research_reports"
     python src/upload_knowledge_base.py --upload-all-data --name "complete_knowledge_base"
+    python src/upload_knowledge_base.py --dir data --name "all_data_recursive"
 """
 
 import os
@@ -55,16 +56,26 @@ def get_all_data_subfolders():
     subfolders = [f for f in data_dir.iterdir() if f.is_dir()]
     return subfolders
 
-def list_files_in_directory(dir_path: str, extensions: list) -> list:
+def list_files_in_directory(dir_path: str, extensions: list, recursive: bool = True) -> list:
     """List all files in directory with specified extensions"""
     import glob
     import itertools
     
     exts = [ext.lower().lstrip(".") for ext in extensions]
-    patterns = (os.path.join(dir_path, f"*.{ext}") for ext in exts)
-    file_paths = list(
-        itertools.chain.from_iterable(glob.glob(p, recursive=False) for p in patterns)
-    )
+    file_paths = []
+    
+    if recursive:
+        # Use os.walk for recursive search
+        for root, dirs, files in os.walk(dir_path):
+            for file in files:
+                if any(file.lower().endswith(f".{ext}") for ext in exts):
+                    file_paths.append(os.path.join(root, file))
+    else:
+        # Non-recursive search
+        patterns = (os.path.join(dir_path, f"*.{ext}") for ext in exts)
+        file_paths = list(
+            itertools.chain.from_iterable(glob.glob(p, recursive=False) for p in patterns)
+        )
     return file_paths
 
 def main():
@@ -126,6 +137,20 @@ Examples:
         help="Show what would be uploaded without actually uploading"
     )
     
+    parser.add_argument(
+        "--recursive",
+        action="store_true",
+        default=True,
+        help="Search for files recursively in subdirectories (default: True)"
+    )
+    
+    parser.add_argument(
+        "--no-recursive",
+        action="store_false",
+        dest="recursive",
+        help="Only search files in the specified directory, not subdirectories"
+    )
+    
     args = parser.parse_args()
     
     # Handle list data folders option
@@ -161,6 +186,7 @@ Examples:
         print(f"📄 Extensions: {', '.join(args.extensions)}")
         print(f"📏 Min file size: {args.min_bytes} bytes")
         print(f"🔍 Dry run: {args.dry_run}")
+        print(f"🔄 Recursive: {args.recursive}")
         print(f"📂 Found {len(subfolders)} subfolders:")
         for folder in subfolders:
             print(f"  - {folder.name}")
@@ -173,7 +199,7 @@ Examples:
             
             for folder in subfolders:
                 folder_path = str(folder)
-                files = list_files_in_directory(folder_path, args.extensions)
+                files = list_files_in_directory(folder_path, args.extensions, args.recursive)
                 if files:
                     print(f"\n📂 {folder.name}:")
                     folder_size = 0
@@ -181,7 +207,8 @@ Examples:
                         size = os.path.getsize(path)
                         folder_size += size
                         total_size += size
-                        print(f"  - {os.path.basename(path)} ({size} bytes)")
+                        rel_path = os.path.relpath(path, folder_path)
+                        print(f"  - {rel_path} ({size} bytes)")
                     total_files += len(files)
                     print(f"  📊 {len(files)} files, {folder_size / (1024*1024):.2f} MB")
             
@@ -205,7 +232,8 @@ Examples:
                     dir_path=folder_path,
                     vector_store_id=vector_store_id,
                     extensions=tuple(args.extensions),
-                    min_bytes=args.min_bytes
+                    min_bytes=args.min_bytes,
+                    recursive=args.recursive
                 )
                 
                 # Accumulate stats
@@ -240,11 +268,12 @@ Examples:
         print(f"📄 Extensions: {', '.join(args.extensions)}")
         print(f"📏 Min file size: {args.min_bytes} bytes")
         print(f"🔍 Dry run: {args.dry_run}")
+        print(f"🔄 Recursive: {args.recursive}")
         print("-" * 50)
         
         if args.dry_run:
             # List files that would be uploaded
-            file_paths = list_files_in_directory(args.dir, args.extensions)
+            file_paths = list_files_in_directory(args.dir, args.extensions, args.recursive)
             
             if not file_paths:
                 print("❌ No files found with specified extensions")
@@ -255,7 +284,8 @@ Examples:
             for path in file_paths:
                 size = os.path.getsize(path)
                 total_size += size
-                print(f"  - {os.path.basename(path)} ({size} bytes)")
+                rel_path = os.path.relpath(path, args.dir)
+                print(f"  - {rel_path} ({size} bytes)")
             
             print(f"\n📊 Total size: {total_size / (1024*1024):.2f} MB")
             print("\n⚠️  This was a dry run. Remove --dry-run to actually upload files.")
@@ -272,7 +302,8 @@ Examples:
                 dir_path=args.dir,
                 vector_store_id=vector_store_id,
                 extensions=tuple(args.extensions),
-                min_bytes=args.min_bytes
+                min_bytes=args.min_bytes,
+                recursive=args.recursive
             )
             
             # Print results

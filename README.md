@@ -2,6 +2,9 @@
 
 A Streamlit application for querying an Amazon archaeology knowledge base using OpenAI's Vector Store and Retrieval-Augmented Generation (RAG).
 
+* [Demo video of the RAG-LLM application](https://drive.google.com/file/d/1_Cp67Ku6WF2PEtVz9PCh9_SDHmp6tfEc/view?usp=drive_link)
+* [LLM generated maps of areas to investigate](/home/will/Downloads/OpenAI_to_Z_challenge_maps/LLM_generated_map.png)  
+
 ## 🏛️ Overview
 
 This project provides a complete RAG (Retrieval-Augmented Generation) system for querying archaeological knowledge about the Amazon rainforest. It includes:
@@ -87,18 +90,30 @@ conda activate rag-llm-env
 First, upload your knowledge base documents to OpenAI Vector Store:
 
 ```bash
-# Upload the existing knowledge base
+# Upload ALL files from data folder and subfolders recursively (txt, md, pdf)
+python src/upload_knowledge_base.py --dir data --name
+  "amazon_archaeology_kb"
+
+# Upload the existing knowledge base folder
 python src/upload_knowledge_base.py --dir data/Knowledge_base --name "amazon_archaeology_kb"
 
-# Upload research reports
+# Upload research reports folder
 python src/upload_knowledge_base.py --dir data/Deep_Research_reports --name "research_reports"
 
 # Upload with custom extensions
 python src/upload_knowledge_base.py --dir data/Knowledge_base --name "my_kb" --extensions md txt
 
+# Upload without recursive search (only files in the specified directory)
+python src/upload_knowledge_base.py --dir data --name "data_root_only" --no-recursive
+
 # Dry run to see what would be uploaded
-python src/upload_knowledge_base.py --dir data/Knowledge_base --name "my_kb" --dry-run
+python src/upload_knowledge_base.py --dir data --name "test_upload" --dry-run
+
+# Upload all subfolders in data directory as one vector store
+python src/upload_knowledge_base.py --upload-all-data --name "all_data_combined"
 ```
+
+**Note**: By default, the script now searches for files recursively in all subdirectories. Use `--no-recursive` to disable this behavior.
 
 ### 3. Run the Streamlit App
 
@@ -157,11 +172,12 @@ OpenAI_to_Z/
 ├── README.md                       # This file
 ├── src/
 │   ├── vector_store_manager.py     # Vector store management class
-│   ├── upload_knowledge_base.py    # Knowledge base upload script
+│   ├── upload_knowledge_base.py    # Knowledge base upload script (with recursive support)
 │   └── cleanup_vector_stores.py    # Cleanup utilities
 ├── data/
-│   ├── Knowledge_base/             # Pre-generated knowledge base documents
-│   └── Deep_Research_reports/      # Research reports
+│   ├── Knowledge_base/             # Pre-generated knowledge base documents (MD files)
+│   ├── Deep_Research_reports/      # Research reports (MD files)
+│   └── papers/                     # Research papers (MD/PDF/TXT files)
 └── notebooks/                      # Original Jupyter notebooks
 ```
 

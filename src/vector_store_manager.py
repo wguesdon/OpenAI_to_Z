@@ -61,6 +61,7 @@ class VectorStoreManager:
         vector_store_id: str,
         extensions: tuple[str, ...] = ("pdf", "md", "markdown", "txt"),
         min_bytes: int = 1,  # skip files smaller than this
+        recursive: bool = True,  # search files recursively
     ) -> Dict[str, Any]:
         """
         Upload every file in *dir_path* whose extension appears in *extensions* to OpenAI
@@ -69,10 +70,20 @@ class VectorStoreManager:
         Returns a dictionary with upload statistics.
         """
         exts = [ext.lower().lstrip(".") for ext in extensions]
-        patterns = (os.path.join(dir_path, f"*.{ext}") for ext in exts)
-        file_paths = list(
-            itertools.chain.from_iterable(glob.glob(p, recursive=False) for p in patterns)
-        )
+        file_paths = []
+        
+        if recursive:
+            # Use os.walk for recursive search
+            for root, dirs, files in os.walk(dir_path):
+                for file in files:
+                    if any(file.lower().endswith(f".{ext}") for ext in exts):
+                        file_paths.append(os.path.join(root, file))
+        else:
+            # Non-recursive search (original behavior)
+            patterns = (os.path.join(dir_path, f"*.{ext}") for ext in exts)
+            file_paths = list(
+                itertools.chain.from_iterable(glob.glob(p, recursive=False) for p in patterns)
+            )
         
         if not file_paths:
             self._log(f"No files with extensions {exts} found in {dir_path}", "warning")
